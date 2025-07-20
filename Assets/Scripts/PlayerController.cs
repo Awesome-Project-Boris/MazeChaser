@@ -14,9 +14,9 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // --- GUARD CLAUSE ---
         // We allow the Update method to run if it's the player's turn OR if they are aiming a power-up.
         // If it's any other state (like AITurn or Paused), we exit immediately.
+
         if (GameManager.Instance == null ||
            (GameManager.Instance.CurrentState != GameManager.GameState.PlayerTurn &&
             GameManager.Instance.CurrentState != GameManager.GameState.PowerupTargeting))
@@ -27,6 +27,7 @@ public class PlayerController : MonoBehaviour
         // --- State-Specific Input Handling ---
 
         // Power-up activation should only be checked during the main player turn.
+
         if (GameManager.Instance.CurrentState == GameManager.GameState.PlayerTurn)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1)) { GameManager.Instance.InitiateTargetingMode(0); }
@@ -35,42 +36,38 @@ public class PlayerController : MonoBehaviour
         }
 
         // This switch correctly handles what WASD/Escape do based on the current state.
+
         switch (GameManager.Instance.CurrentState)
         {
             case GameManager.GameState.PlayerTurn:
-                // If it's our turn, WASD moves the character.
-                HandleMovementInput();
+                HandleMovementInput(); // If it's our turn, WASD moves the character.
                 break;
 
             case GameManager.GameState.PowerupTargeting:
-                // If we are aiming, WASD confirms the target and Escape cancels.
-                HandleTargetingInput();
+                HandleTargetingInput();   // If we are aiming, WASD confirms the target and Escape cancels.
                 break;
         }
     }
 
-    // In PlayerController.cs
 
     // In PlayerController.cs
 
     private void AttemptPlayerMove(Vector2Int direction)
     {
-        // We still set the state to animating to block input.
         GameManager.Instance.SetState(GameManager.GameState.PlayerAnimating);
 
         tileMovement.AttemptMove(direction, (success) => {
             if (success)
             {
-                // --- NEW "CATCH" LOGIC FOR THE PLAYER'S TURN ---
                 // After the player's move is successful, check if they landed on the AI.
-                var aiController = FindFirstObjectByType<AIController>(); // Find the AI in the scene.
+                var aiController = FindObjectOfType<AIController>(); // Find the AI in the scene.
                 if (aiController != null && tileMovement.GetCurrentGridPosition() == aiController.GetComponent<TileMovement>().GetCurrentGridPosition())
                 {
                     Debug.Log("CAUGHT! The Player has moved onto the AI's tile.");
                     GameManager.Instance.EndGame(false); // Player loses.
-                    return; // Return here to prevent the turn from ending normally.
+                    return;
                 }
-
+                
                 // If not caught, end the turn normally so the AI can move.
                 GameManager.Instance.EndPlayerTurn();
             }
@@ -82,7 +79,7 @@ public class PlayerController : MonoBehaviour
         });
     }
 
-    // We can still keep the OnTriggerEnter for later use with powerup pickups or other triggers.
+
     void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.CompareTag("EndGoal"))
@@ -94,8 +91,7 @@ public class PlayerController : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        // Check if the object we collided with is the Enemy
-        if (collision.gameObject.GetComponent<AIController>() != null)
+        if (collision.gameObject.GetComponent<AIController>() != null) // Check if the object we collided with is the Enemy
         {
             Debug.Log("CAUGHT! The AI has caught the player.");
             GameManager.Instance.EndGame(false); // Player loses
@@ -111,10 +107,12 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    // This new method handles what happens when we press WASD while aiming.
+    // This method handles what happens when we press WASD while aiming.
+
     void HandleTargetingInput()
     {
         // The player presses WASD to confirm the direction of the power-up
+        
         if (Input.GetKeyDown(KeyCode.W)) { GameManager.Instance.ConfirmPowerupTarget(Direction.Front); }
         else if (Input.GetKeyDown(KeyCode.S)) { GameManager.Instance.ConfirmPowerupTarget(Direction.Back); }
         else if (Input.GetKeyDown(KeyCode.D)) { GameManager.Instance.ConfirmPowerupTarget(Direction.Right); }

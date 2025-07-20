@@ -1,12 +1,8 @@
-// MazePathfinder.cs
 using System.Collections.Generic;
 using UnityEngine;
 
 
-
-
 // We're using BFS to find the optimal placements for enemy and player.
-
 
 public static class MazePathfinder
 {
@@ -57,7 +53,6 @@ public static class MazePathfinder
 
     // Finds the single shortest path between a start and end point.
     // It returns a List of coordinates representing the cells on the path.
-    // In MazePathfinder.cs
 
     public static List<Vector2Int> FindShortestPath(int startRow, int startCol, int endRow, int endCol, BasicMazeGenerator generator)
     {
@@ -135,12 +130,14 @@ public static class MazePathfinder
 
     // Calculates the distance from every cell in the maze to the NEAREST cell on a given path.
     // This uses a "multi-source" BFS starting from all path cells at once.
+
     public static Dictionary<Vector2Int, int> CalculateDistancesFromPath(List<Vector2Int> path, BasicMazeGenerator generator)
     {
         Dictionary<Vector2Int, int> distances = new Dictionary<Vector2Int, int>();
         Queue<Vector2Int> queue = new Queue<Vector2Int>();
 
         // Start the search from EVERY cell on the path, with a distance of 0.
+
         foreach (var pathCell in path)
         {
             if (!distances.ContainsKey(pathCell))
@@ -150,7 +147,8 @@ public static class MazePathfinder
             }
         }
 
-        // Standard BFS process
+        // Standard BFS
+
         while (queue.Count > 0)
         {
             Vector2Int currentNode = queue.Dequeue();
@@ -173,6 +171,7 @@ public static class MazePathfinder
     }
 
     // This method returns a map of distances from the start cell to all other reachable cells.
+
     public static Dictionary<Vector2Int, int> CalculateAllDistances(int startRow, int startCol, BasicMazeGenerator generator)
     {
         Dictionary<Vector2Int, int> distances = new Dictionary<Vector2Int, int>();
@@ -208,6 +207,7 @@ public static class MazePathfinder
 
     // This is a new, overloaded version of FindShortestPath.
     // It allows us to run a path search on a temporary, modified copy of the maze data.
+
     public static List<Vector2Int> FindShortestPath(int startRow, int startCol, int endRow, int endCol, MazeCell[,] mazeData, int rows, int columns)
     {
         Queue<Vector2Int> queue = new Queue<Vector2Int>();
@@ -224,6 +224,7 @@ public static class MazePathfinder
             if (currentNode == endNode) break;
 
             // The only change is here: we access the mazeData array directly.
+
             MazeCell currentCell = mazeData[currentNode.y, currentNode.x];
 
             System.Action<Vector2Int> checkNeighbor = (neighborNode) => {
@@ -240,7 +241,6 @@ public static class MazePathfinder
             if (!currentCell.WallBack) checkNeighbor(new Vector2Int(currentNode.x, currentNode.y - 1));
         }
 
-        // (The rest of the path reconstruction logic is the same)
         List<Vector2Int> path = new List<Vector2Int>();
         Vector2Int? pathNode = endNode;
         while (pathNode != null && visited.ContainsKey(pathNode.Value))

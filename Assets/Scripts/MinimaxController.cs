@@ -5,18 +5,15 @@ using System.Linq;
 [RequireComponent(typeof(AIController))]
 public class MinimaxController : MonoBehaviour
 {
-    // --- We will add the main Minimax logic here in later steps ---
 
-
-    // --- STEP 3: GENERATE ALL POSSIBLE ACTIONS ---
-
-    /// <summary>
     /// Looks at a game state and generates a complete list of all possible actions
     /// for the currently active character (AI or Player).
-    /// </summary>
-    /// <param name="state">The game state to analyze.</param>
-    /// <param name="isAITurn">True if we are generating moves for the AI, false for the Player.</param>
-    /// <returns>A list of all valid AIAction objects.</returns>
+
+    /// Gets a game state to analyze, and whose turn is it
+
+    /// Returns a list of all valid AIAction objects.
+
+
     private List<AIAction> GetPossibleActions(MinimaxGameState state, bool isAITurn)
     {
         var actions = new List<AIAction>();
@@ -28,7 +25,8 @@ public class MinimaxController : MonoBehaviour
             return actions;
         }
 
-        // --- A helper to perform the strict two-way wall check ---
+        // A helper to perform the strict two-way wall check 
+
         System.Func<Direction, bool> isPathClear = (dir) => {
             Vector2Int neighborPos = characterPos + GetVectorFromDirection(dir);
             if (neighborPos.x < 0 || neighborPos.x >= state.MazeColumns || neighborPos.y < 0 || neighborPos.y >= state.MazeRows)
@@ -45,13 +43,15 @@ public class MinimaxController : MonoBehaviour
             return false;
         };
 
-        // --- ACTION TYPE 1: Standard Moves ---
+        // ACTION TYPE 1: Standard Moves 
+
         if (isPathClear(Direction.Front)) actions.Add(new AIAction { Type = ActionType.Move, MoveDirection = Direction.Front });
         if (isPathClear(Direction.Back)) actions.Add(new AIAction { Type = ActionType.Move, MoveDirection = Direction.Back });
         if (isPathClear(Direction.Right)) actions.Add(new AIAction { Type = ActionType.Move, MoveDirection = Direction.Right });
         if (isPathClear(Direction.Left)) actions.Add(new AIAction { Type = ActionType.Move, MoveDirection = Direction.Left });
 
-        // --- ACTION TYPE 2: Power-Up Usage ---
+        // ACTION TYPE 2: Power-Up Usage 
+
         for (int i = 0; i < powerups.Count; i++)
         {
             Powerup powerup = powerups[i];
@@ -97,15 +97,15 @@ public class MinimaxController : MonoBehaviour
         return actions;
     }
 
-    /// <summary>
+
     /// The simulation engine. Takes a state and an action, and returns the resulting new state.
-    /// </summary>
+
     public MinimaxGameState GetStateAfterAction(MinimaxGameState previousState, AIAction action, bool isAITurn)
     {
-        // Start by creating a deep copy of the state. This is our sandbox to play in.
+        // Creating a copy for the state to sandbox it
+
         MinimaxGameState newState = previousState.Clone();
 
-        // Identify who is acting and who is the opponent
         var actingPowerups = isAITurn ? newState.AIPowerups : newState.PlayerPowerups;
 
         if (action.Type == ActionType.Move)
@@ -117,6 +117,7 @@ public class MinimaxController : MonoBehaviour
         else if (action.Type == ActionType.UsePowerup)
         {
             // The powerup is consumed
+
             Powerup usedPowerup = actingPowerups[action.PowerupSlot];
             actingPowerups.RemoveAt(action.PowerupSlot);
 
@@ -140,8 +141,10 @@ public class MinimaxController : MonoBehaviour
 
                 case PowerupType.Teleport:
                     Vector2Int goalPos = new Vector2Int(newState.MazeColumns - 1, newState.MazeRows - 1);
+
                     // For a deterministic simulation, we assume Teleport sends the opponent
                     // to the worst possible spot for them (furthest from the goal).
+
                     Vector2Int newTeleportPos = FindFurthestCellSimulated(goalPos, newState);
 
                     if (isAITurn) newState.PlayerPos = newTeleportPos; // AI teleports Player
@@ -163,7 +166,7 @@ public class MinimaxController : MonoBehaviour
         return newState;
     }
 
-    // --- Helper methods for simulation ---
+    // Helper methods for simulation
 
     private void SimulateWallBreak(MinimaxGameState state, Vector2Int pos, Direction dir)
     {
@@ -179,9 +182,11 @@ public class MinimaxController : MonoBehaviour
         }
 
         // Check bounds
+
         if (neighborPos.x < 0 || neighborPos.x >= state.MazeColumns || neighborPos.y < 0 || neighborPos.y >= state.MazeRows) return;
 
         // Update walls in the cloned maze grid
+
         state.MazeGrid[pos.y, pos.x].SetWall(dir, false);
         state.MazeGrid[neighborPos.y, neighborPos.x].SetWall(oppositeDir, false);
     }
@@ -198,10 +203,6 @@ public class MinimaxController : MonoBehaviour
         }
     }
 
-    // ADD THE FOLLOWING THREE HELPER METHODS FOR SIMULATING COMPLEX POWERUPS
-    // Note: These are simplified versions of your MazePathfinder logic that work on our GameState object.
-
-    // In MinimaxController.cs
 
     public List<Vector2Int> FindShortestPathSimulated(Vector2Int startNode, Vector2Int endNode, MinimaxGameState state)
     {
@@ -221,10 +222,12 @@ public class MinimaxController : MonoBehaviour
             MazeCell currentCell = state.MazeGrid[currentNode.y, currentNode.x];
 
             // Helper to perform a strict two-way check within the simulated state
+
             System.Action<Direction> checkNeighbor = (dir) => {
                 Vector2Int neighborNode = currentNode + GetVectorFromDirection(dir);
 
                 // Check bounds first
+
                 if (neighborNode.x < 0 || neighborNode.x >= state.MazeColumns || neighborNode.y < 0 || neighborNode.y >= state.MazeRows) return;
 
                 MazeCell neighborCell = state.MazeGrid[neighborNode.y, neighborNode.x];
@@ -287,43 +290,43 @@ public class MinimaxController : MonoBehaviour
         return furthestNode;
     }
 
-    /// <summary>
-    /// The AI's "brain". Analyzes a game state and returns a score.
-    /// Higher scores are better for the AI.
-    /// </summary>
 
-    // In MinimaxController.cs
+    /// The Agent's "brain". Analyzes a game state and returns a score, higher scores are better for the AI.
 
-    // In MinimaxController.cs
 
     private float EvaluateState(MinimaxGameState state)
     {
         Vector2Int goalPos = new Vector2Int(state.MazeColumns - 1, state.MazeRows - 1);
 
-        // --- Terminal State Check (Game Over Conditions are Absolute) ---
+        //  Terminal State Check (Game Over Conditions are Absolute) 
+
         if (state.AIPos == state.PlayerPos) return 10000f;
         if (state.PlayerPos == goalPos) return -10000f;
         if (state.AIPos == goalPos) return -5000f;
 
-        // --- Path Calculations ---
+        //  Path Calculations 
+
         int aiPathToPlayer = FindShortestPathSimulated(state.AIPos, state.PlayerPos, state)?.Count ?? 999;
         int playerPathToGoal = FindShortestPathSimulated(state.PlayerPos, goalPos, state)?.Count ?? 999;
 
-        // --- Core Chase Scoring ---
+        //  Core Chase Scoring 
+
         float finalScore = -aiPathToPlayer * 10f;
 
-        // --- NEW: URGENCY HEURISTIC ---
+        // URGENCY HEURISTIC 
         // If the player is very close to winning, the AI must panic.
+
         if (playerPathToGoal < 5)
         {
             // The penalty increases exponentially the closer the player gets.
             // 4 steps away = -100 penalty. 1 step away = -400 penalty.
             // This will force the AI to prioritize stopping the player above all else.
+
             float urgencyPenalty = (5 - playerPathToGoal) * 100f;
             finalScore -= urgencyPenalty;
         }
 
-        // --- Strategic Modifiers for Power-ups ---
+        // Strategic Modifiers for Power-ups 
         if (state.PlayerTurnsFrozen > 0)
         {
             finalScore += 80f;
@@ -338,14 +341,7 @@ public class MinimaxController : MonoBehaviour
 
 
 
-    // --- PUBLIC ENTRY POINT ---
-
-    /// <summary>
-    /// The main entry point for the AI. It sets up and starts the Minimax evaluation.
-    /// </summary>
-    /// <returns>The single best action for the AI to take right now.</returns>
-
-    // In MinimaxController.cs
+    // From here the agent pulls the best possible action it can preform 
 
 
     public AIAction GetBestAction(MinimaxGameState currentState, int depth)
@@ -353,8 +349,8 @@ public class MinimaxController : MonoBehaviour
         AIAction bestAction = null;
         float bestScore = float.MinValue;
 
-        // --- Check for an immediate win before any complex thinking ---
-        // (This logic remains the same)
+        // Check for an immediate win before any complex thinking 
+
         foreach (AIAction immediateAction in GetPossibleActions(currentState, true))
         {
             if (immediateAction.Type == ActionType.Move)
@@ -368,19 +364,22 @@ public class MinimaxController : MonoBehaviour
             }
         }
 
-        // --- Setup for Tie-breaker and NEW Willingness Factor ---
+        //  Setup for Tie-breaker and willingness factor 
         List<Vector2Int> idealPath = FindShortestPathSimulated(currentState.AIPos, currentState.PlayerPos, currentState);
         Vector2Int idealNextStep = (idealPath != null && idealPath.Count > 1) ? idealPath[1] : currentState.AIPos;
 
-        // --- NEW WILLINGNESS CALCULATION ---
+        // Willingness - how hard does the agent want to user its powerups?
+
         Vector2Int goalPos = new Vector2Int(currentState.MazeColumns - 1, currentState.MazeRows - 1);
         int playerPathToGoal = FindShortestPathSimulated(currentState.PlayerPos, goalPos, currentState)?.Count ?? 999;
 
-        // The AI's willingness to use power-ups scales from 20% to 100% based on the player's proximity to the goal.
+        // The agent's willingness to use power-ups scales from 20% to 100% based on the player's proximity to the goal.
+
         float willingness = Mathf.InverseLerp(30f, 5f, playerPathToGoal); // Ranges from 0.0 (far) to 1.0 (close)
         float willingnessModifier = 0.2f + (willingness * 0.8f); // Scales from a base of 0.2 up to 1.0
 
-        // --- Main Evaluation Loop ---
+        //  Main Evaluation Loop 
+
         foreach (AIAction action in GetPossibleActions(currentState, true))
         {
             MinimaxGameState newState = GetStateAfterAction(currentState, action, true);
@@ -389,7 +388,6 @@ public class MinimaxController : MonoBehaviour
 
             if (action.Type == ActionType.UsePowerup)
             {
-                // ... (Strategic Bonus Calculation is the same as before) ...
                 switch (action.PowerupType)
                 {
                     case PowerupType.BreakWall:
@@ -410,12 +408,13 @@ public class MinimaxController : MonoBehaviour
                         break;
                 }
 
-                // --- APPLY THE WILLINGNESS MODIFIER ---
                 // The calculated bonus is now scaled by the AI's current "willingness" to act.
+
                 score += strategicBonus * willingnessModifier;
             }
 
             // Apply tie-breaker for moves
+
             if (action.Type == ActionType.Move && (currentState.AIPos + GetVectorFromDirection(action.MoveDirection) == idealNextStep))
             {
                 score += 0.01f;
@@ -431,15 +430,18 @@ public class MinimaxController : MonoBehaviour
         return bestAction;
     }
 
-    // --- The Core Recursive Algorithm ---
+    // The Core Recursive Algorithm 
+
     private float Minimax(MinimaxGameState state, int depth, bool isMaximizingPlayer)
     {
-        // --- Base Case: If we've reached max depth or the game is over, return the state's value ---
+        // Base Case: If we've reached max depth or the game is over, return the state's value 
+
         if (depth == 0)
         {
             return EvaluateState(state);
         }
         // A quick check to see if the game ended prematurely
+
         float terminalScore = EvaluateState(state);
         if (Mathf.Abs(terminalScore) >= 1000f)
         {
@@ -452,8 +454,9 @@ public class MinimaxController : MonoBehaviour
             return EvaluateState(state);
         }
 
-        // --- Recursive Step ---
-        if (isMaximizingPlayer) // The AI's turn
+        // Recursive Step 
+
+        if (isMaximizingPlayer) // Agent's turn
         {
             float bestScore = float.MinValue;
             foreach (var action in possibleActions)
@@ -483,17 +486,20 @@ public class MinimaxController : MonoBehaviour
         var currentPos = startPos;
 
         // Loop for a maximum distance to prevent infinite loops in odd cases
+
         for (int i = 0; i < Mathf.Max(state.MazeRows, state.MazeColumns); i++)
         {
             Vector2Int neighborPos = currentPos + GetVectorFromDirection(direction);
 
             // Stop if the next tile is out of bounds
+
             if (neighborPos.x < 0 || neighborPos.x >= state.MazeColumns || neighborPos.y < 0 || neighborPos.y >= state.MazeRows)
             {
                 break;
             }
 
             // Perform the same strict, two-way wall check
+
             MazeCell currentCell = state.MazeGrid[currentPos.y, currentPos.x];
             MazeCell neighborCell = state.MazeGrid[neighborPos.y, neighborPos.x];
             bool isPathClear = false;
@@ -504,12 +510,14 @@ public class MinimaxController : MonoBehaviour
             else if (direction == Direction.Left && !currentCell.WallLeft && !neighborCell.WallRight) isPathClear = true;
 
             // If a wall is in the way, the dash stops.
+
             if (!isPathClear)
             {
                 break;
             }
 
             // Otherwise, add the tile to the path and continue from the new position.
+            
             path.Add(neighborPos);
             currentPos = neighborPos;
         }

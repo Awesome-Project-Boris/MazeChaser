@@ -3,17 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 
 [RequireComponent(typeof(TileMovement))]
-[RequireComponent(typeof(MinimaxController))] // Ensure the Minimax brain is attached
+[RequireComponent(typeof(MinimaxController))]
+
 public class AIController : MonoBehaviour
 {
-
-    // For path debugging
-
     private List<GameObject> highlightedPathTiles = new List<GameObject>(); // Main path to consider
     private List<GameObject> highlightedStrategicPathTiles = new List<GameObject>(); // Alternative wildcard path to consider
 
-    private Dictionary<GameObject, Color> originalTileColors = new Dictionary<GameObject, Color>(); // Original color of tiles
-
+    private Dictionary<GameObject, Color> originalTileColors = new Dictionary<GameObject, Color>(); // Original color of tiles  
 
     public int TurnsFrozen { get; set; } = 0;
 
@@ -33,7 +30,8 @@ public class AIController : MonoBehaviour
         tileMovement = GetComponent<TileMovement>();
         minimaxController = GetComponent<MinimaxController>();
 
-        // Get references from singletons/managers
+        // Getting component references
+
         player = GameManager.Instance.player;
         mazeSpawner = FindObjectOfType<MazeSpawner>();
         powerupManager = PowerupManager.Instance;
@@ -60,8 +58,10 @@ public class AIController : MonoBehaviour
         }
 
         // --- VISUALIZER CALL ---
-        // At the start of the turn, show the path the AI is considering.
-        var chasePath = MazePathfinder.FindShortestPath(
+
+        // At the start of the turn, this shows the path the AI is considering.
+
+        vvar chasePath = MazePathfinder.FindShortestPath(
             tileMovement.GetCurrentGridPosition().y, tileMovement.GetCurrentGridPosition().x,
             player.GetComponent<TileMovement>().GetCurrentGridPosition().y, player.GetComponent<TileMovement>().GetCurrentGridPosition().x,
             mazeSpawner.MazeGenerator
@@ -69,7 +69,9 @@ public class AIController : MonoBehaviour
         // Draw the main chase path in blue.
         VisualizePath(chasePath, new Color(0.9f, 0.9f, 1.0f));
 
-        // 1. CAPTURE the current state of the game.
+
+        // 1. We figure out how's the game going and the parameters for Minimax's condsideration
+
         MinimaxGameState currentState = new MinimaxGameState
         {
             AIPos = tileMovement.GetCurrentGridPosition(),
@@ -83,14 +85,15 @@ public class AIController : MonoBehaviour
             MazeColumns = mazeSpawner.Columns
         };
 
-        // 2. ASK the Minimax brain for the best action.
+        // 2. We ask the Minimax brain for the best action.
+
         AIAction bestAction = minimaxController.GetBestAction(currentState, AIDepth);
 
-        // FALLBACK LOGIC
+        // 2.5. If we don't get a suitable "best" action, we just tell the AI to move down the path to the player.
+
         if (bestAction == null)
         {
             Debug.LogWarning("[AI] Minimax returned no best action. Using fallback: move towards player.");
-            // Fallback: Find the shortest path to the player and take one step.
             var path = MazePathfinder.FindShortestPath(currentState.AIPos.y, currentState.AIPos.x, currentState.PlayerPos.y, currentState.PlayerPos.x, mazeSpawner.MazeGenerator);
             if (path != null && path.Count > 1)
             {
@@ -110,41 +113,42 @@ public class AIController : MonoBehaviour
             }
         }
 
-        Color boldColor = new Color(0.6f, 0.6f, 1.0f);
-        Color dimColor = new Color(0.9f, 0.9f, 1.0f);
+         Color boldColor = new Color(0.6f, 0.6f, 1.0f);
+ Color dimColor = new Color(0.9f, 0.9f, 1.0f);
 
-        // Determine the final, chosen path based on the AI's action.
-        List<Vector2Int> finalPath;
-        if (bestAction.Type == ActionType.UsePowerup && (bestAction.PowerupType == PowerupType.BreakWall || bestAction.PowerupType == PowerupType.Jump))
-        {
-            // The best action was strategic, so the "final path" is the one AFTER the power-up.
-            var stateAfterAction = minimaxController.GetStateAfterAction(currentState, bestAction, true);
-            finalPath = minimaxController.FindShortestPathSimulated(stateAfterAction.AIPos, stateAfterAction.PlayerPos, stateAfterAction);
+ // Determine the final, chosen path based on the AI's action.
+ List<Vector2Int> finalPath;
+ if (bestAction.Type == ActionType.UsePowerup && (bestAction.PowerupType == PowerupType.BreakWall || bestAction.PowerupType == PowerupType.Jump))
+ {
+     // The best action was strategic, so the "final path" is the one AFTER the power-up.
+     var stateAfterAction = minimaxController.GetStateAfterAction(currentState, bestAction, true);
+     finalPath = minimaxController.FindShortestPathSimulated(stateAfterAction.AIPos, stateAfterAction.PlayerPos, stateAfterAction);
 
-            // In this case, we also want to show the "alternative" dumb path.
-            var alternativePath = MazePathfinder.FindShortestPath(
-                currentState.AIPos.y, currentState.AIPos.x,
-                currentState.PlayerPos.y, currentState.PlayerPos.x,
-                mazeSpawner.MazeGenerator
-            );
-            // Draw the alternative path first with the dim color.
-            VisualizePath(alternativePath, dimColor);
-        }
-        else
-        {
-            // The best action was a simple move, so the final path is the direct chase path.
-            finalPath = MazePathfinder.FindShortestPath(
-                currentState.AIPos.y, currentState.AIPos.x,
-                currentState.PlayerPos.y, currentState.PlayerPos.x,
-                mazeSpawner.MazeGenerator
-            );
-        }
+     // In this case, we also want to show the "alternative" dumb path.
+     var alternativePath = MazePathfinder.FindShortestPath(
+         currentState.AIPos.y, currentState.AIPos.x,
+         currentState.PlayerPos.y, currentState.PlayerPos.x,
+         mazeSpawner.MazeGenerator
+     );
+     // Draw the alternative path first with the dim color.
+     VisualizePath(alternativePath, dimColor);
+ }
+ else
+ {
+     // The best action was a simple move, so the final path is the direct chase path.
+     finalPath = MazePathfinder.FindShortestPath(
+         currentState.AIPos.y, currentState.AIPos.x,
+         currentState.PlayerPos.y, currentState.PlayerPos.x,
+         mazeSpawner.MazeGenerator
+     );
+ }
 
-        // Draw the final, chosen path with the BOLD color.
-        // The VisualizePath logic will automatically prevent it from overwriting tiles
-        // that were already colored by the dim "alternative" path if they overlap.
-        // To ensure the main path is always prominent, we will draw it last.
-        VisualizePath(finalPath, boldColor);
+ // Draw the final, chosen path with the BOLD color.
+ // The VisualizePath logic will automatically prevent it from overwriting tiles
+ // that were already colored by the dim "alternative" path if they overlap.
+ // To ensure the main path is always prominent, we will draw it last.
+ 
+ VisualizePath(finalPath, boldColor);
 
         Debug.Log($"[AI DECISION]: {bestAction}");
 
@@ -156,15 +160,23 @@ public class AIController : MonoBehaviour
             VisualizePath(strategicPath, new Color(0.6f, 0.6f, 1.0f));
         }
 
+        if (bestAction.Type == ActionType.UsePowerup && (bestAction.PowerupType == PowerupType.BreakWall || bestAction.PowerupType == PowerupType.Jump))
+        {
+            // Create a temporary clone of the maze to simulate the wall break
+            var stateAfterAction = minimaxController.GetStateAfterAction(currentState, bestAction, true);
+            var strategicPath = minimaxController.FindShortestPathSimulated(stateAfterAction.AIPos, stateAfterAction.PlayerPos, stateAfterAction);
+            VisualizeStrategicPath(strategicPath);
+        }
+
         if (bestAction.Type == ActionType.UsePowerup)
         {
-            // This line automatically formats enum names like "BreakWall" into "Break Wall".
-            string powerupName = System.Text.RegularExpressions.Regex.Replace(bestAction.PowerupType.ToString(), "(\\B[A-Z])", " $1");
+            string powerupName = System.Text.RegularExpressions.Regex.Replace(bestAction.PowerupType.ToString(), "(\\B[A-Z])", " $1"); // We get the name of the powerup being used
             string chatMessage = $"Agent used {powerupName} at turn {GameManager.Instance.GetTurnNumber()}!";
             UIManager.Instance.AddToChatHistory(chatMessage);
         }
 
-        // 3. EXECUTE the action.
+        // 3. The Agent executes the move
+
         if (bestAction.Type == ActionType.Move)
         {
             tileMovement.AttemptMove(GetVectorFromDirection(bestAction.MoveDirection), (success) =>
@@ -178,6 +190,8 @@ public class AIController : MonoBehaviour
             GameManager.Instance.EndAITurn();
         }
     }
+
+
 
     private void ExecutePowerupAction(AIAction action)
     {
@@ -232,9 +246,8 @@ public class AIController : MonoBehaviour
 
     // Path debugging
 
-    // Add these two new methods to AIController.cs
 
-    // In AIController.cs
+// In AIController.cs
 
     private void ClearPreviousPath()
     {
@@ -258,49 +271,50 @@ public class AIController : MonoBehaviour
 
         highlightedPathTiles.Clear();
         highlightedStrategicPathTiles.Clear();
+        
     }
 
-
-    private void ClearAllHighlights()
+    
+private void ClearAllHighlights()
+{
+    foreach (var entry in originalTileColors)
     {
-        foreach (var entry in originalTileColors)
+        // Key is the GameObject, Value is the original Color
+        if (entry.Key != null) 
         {
-            // Key is the GameObject, Value is the original Color
-            if (entry.Key != null)
-            {
-                entry.Key.GetComponent<Renderer>().material.color = entry.Value;
-            }
+            entry.Key.GetComponent<Renderer>().material.color = entry.Value;
         }
-        // After reverting all colors, we clear the dictionary for the next turn.
-        originalTileColors.Clear();
     }
+    // After reverting all colors, we clear the dictionary for the next turn.
+    originalTileColors.Clear();
+}
 
-    private void VisualizePath(List<Vector2Int> path, Color highlightColor)
+private void VisualizePath(List<Vector2Int> path, Color highlightColor)
+{
+    if (path == null) return;
+
+    foreach (var pos in path)
     {
-        if (path == null) return;
-
-        foreach (var pos in path)
+        GameObject tileObject = mazeSpawner.GetFloorTile(pos.y, pos.x);
+        if (tileObject != null)
         {
-            GameObject tileObject = mazeSpawner.GetFloorTile(pos.y, pos.x);
-            if (tileObject != null)
+            var tileRenderer = tileObject.GetComponent<Renderer>();
+            if (tileRenderer != null)
             {
-                var tileRenderer = tileObject.GetComponent<Renderer>();
-                if (tileRenderer != null)
+                // IMPORTANT: Only store the tile's color if it's the first time
+                // we are highlighting it this turn.
+                if (!originalTileColors.ContainsKey(tileObject))
                 {
-                    // IMPORTANT: Only store the tile's color if it's the first time
-                    // we are highlighting it this turn.
-                    if (!originalTileColors.ContainsKey(tileObject))
-                    {
-                        originalTileColors.Add(tileObject, tileRenderer.material.color);
-                    }
-                    // Apply the highlight color.
-                    tileRenderer.material.color = highlightColor;
+                    originalTileColors.Add(tileObject, tileRenderer.material.color);
                 }
+                // Apply the highlight color.
+                tileRenderer.material.color = highlightColor;
             }
         }
     }
+}
 
-    void OnTriggerEnter(Collider other)
+void OnTriggerEnter(Collider other)
     {
         // Check if the object we touched has a PlayerController script on it.
         if (other.GetComponent<PlayerController>() != null)

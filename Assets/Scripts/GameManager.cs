@@ -5,10 +5,11 @@ using TMPro;
 
 public class GameManager : MonoBehaviour
 {
-    // --- Singleton Pattern ---
     public static GameManager Instance { get; private set; }
 
-    // --- Game State Machine (with all states) ---
+
+    // Game State Machine (with all states) 
+
     public enum GameState
     {
         MainMenu,
@@ -22,16 +23,17 @@ public class GameManager : MonoBehaviour
         GameOver
     }
 
+    public GameState CurrentState { get; private set; }
+
     [Header("Scene References")]
     public MazeSpawner mazeSpawner;
-
-    public GameState CurrentState { get; private set; }
 
     [Header("UI References")]
     public TextMeshProUGUI RewardKeeperUI;
     public TextMeshProUGUI TurnText;
 
-    // --- Turn Management ---
+    //  Turn Management 
+
     private int turnNumber = 1;
     private int activePowerupSlot = -1;
     private Coroutine turnTransitionCoroutine;
@@ -47,7 +49,7 @@ public class GameManager : MonoBehaviour
     [Tooltip("The short pause in seconds between the player's and AI's turns.")]
     public float TurnTransitionDelay = 0.5f;
 
-    // --- Object References ---
+    // Object References
     private PowerupManager powerupManager;
     public PlayerController player { get; private set; }
     public AIController ai { get; private set; }
@@ -75,10 +77,11 @@ public class GameManager : MonoBehaviour
     public void StartGame()
     {
         // Set the state to prevent anything else from happening while spawning
+
         SetState(GameState.Starting);
 
-        // Now, command the MazeSpawner to build the maze.
-        // The MazeSpawner will then call InitializeGame() when it's done.
+        // We're telling the maze spawner to spawn the maze, and then the maze spawner nudges the manager to start the game
+
         if (mazeSpawner != null)
         {
             mazeSpawner.BeginSpawning();
@@ -91,20 +94,21 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        // The Start method will now control the initial game state.
         if (showMainMenuOnLoad)
         {
-            // This is a fresh launch. Set the state to MainMenu and wait for the player.
+            // This is a fresh launch. Setting the state to MainMenu and waiting for the player.
+
             CurrentState = GameState.MainMenu;
         }
         else
         {
-            // This is a Reset. Bypass the menu and command the game to start immediately.
+            // This is a Reset. Bypassing the menu and commanding the game to start immediately.
             StartGame();
         }
     }
 
     // Called by MazeSpawner after all objects are created.
+
     public void InitializeGame(PlayerController playerController, AIController aiController)
     {
         this.player = playerController;
@@ -120,7 +124,7 @@ public class GameManager : MonoBehaviour
         StartPlayerTurn();
     }
 
-    // --- Turn Flow Management ---
+    //  Turn Flow Management 
 
     private void StartPlayerTurn()
     {
@@ -156,8 +160,6 @@ public class GameManager : MonoBehaviour
         ai.TakeTurn();
     }
 
-    // In GameManager.cs
-
     public void EndAITurn()
     {
         if (CurrentState != GameState.AITurn && CurrentState != GameState.AIAnimating) return;
@@ -169,6 +171,7 @@ public class GameManager : MonoBehaviour
         if (playerIsFrozen)
         {
             // If the player is frozen, we still advance the turn counter to represent their "skipped" turn.
+
             turnNumber++;
             Debug.Log($"--- Turn {turnNumber}: Player's Turn (SKIPPED) ---");
 
@@ -176,11 +179,13 @@ public class GameManager : MonoBehaviour
             UIManager.Instance.ShowNotification($"Player is frozen! {player.TurnsFrozen} turn(s) left.", 1.5f);
 
             // Because the player's turn was skipped, we transition right back to the AI's turn.
+
             TransitionToState(GameState.AITurn);
         }
         else
         {
             // Normal turn progression.
+
             turnNumber++;
             TransitionToState(GameState.PlayerTurn);
         }
@@ -210,7 +215,7 @@ public class GameManager : MonoBehaviour
         turnTransitionCoroutine = null;
     }
 
-    // --- Power-up & Game State Logic ---
+    //  Power-up & Game State Logic 
 
     public void InitiateTargetingMode(int slotIndex)
     {

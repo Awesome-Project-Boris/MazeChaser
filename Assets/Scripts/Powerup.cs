@@ -10,7 +10,7 @@ public enum PowerupType
 }
 
 [System.Serializable]
-public class Powerup
+public class Powerup // Just a data type class
 {
     public PowerupType Type;
     public string Name;

@@ -33,7 +33,6 @@ public class TileMovement : MonoBehaviour
         {
             // When we start the coroutine, we provide a callback that will end the turn.
             StartCoroutine(MoveToTile(currentPosition + direction, () => {
-                // This is the original onComplete logic.
             }));
             onMoveAttempted?.Invoke(true); // Report that the move successfully started
         }
@@ -64,7 +63,6 @@ public class TileMovement : MonoBehaviour
         return false;
     }
 
-    // CHANGE 2: The coroutine also accepts the onComplete action.
     private IEnumerator MoveToTile(Vector2Int targetGridPos, System.Action onMoveComplete)
     {
         isMoving = true;
@@ -80,11 +78,9 @@ public class TileMovement : MonoBehaviour
         currentPosition = targetGridPos;
         isMoving = false;
 
-        // CHANGE 3: Once movement is finished, we call the provided action.
         onMoveComplete?.Invoke();
     }
 
-    // Helper functions (unchanged)
     private Vector3 GridToWorld(Vector2Int gridPos)
     {
         return new Vector3(gridPos.x * (mazeSpawner.CellWidth + (mazeSpawner.AddGaps ? 0.2f : 0)), 1, gridPos.y * (mazeSpawner.CellHeight + (mazeSpawner.AddGaps ? 0.2f : 0)));

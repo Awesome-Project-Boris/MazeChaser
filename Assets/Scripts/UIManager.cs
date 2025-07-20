@@ -11,8 +11,8 @@ public class UIManager : MonoBehaviour
     public static UIManager Instance { get; private set; }
 
     [Header("UI Panels")]
-    public GameObject MainMenuPanel; // Assign "MainMenu" panel here
-    public GameObject EndgamePanel;  // Assign "EndgamePanel" here
+    public GameObject MainMenuPanel; 
+    public GameObject EndgamePanel; 
 
 
     [Header("UI Sprites")]
@@ -71,11 +71,6 @@ public class UIManager : MonoBehaviour
         GameManager.Instance.StartGame();
     }
 
-    public void OnExitButtonPressed()
-    {
-        Application.Quit();
-    }
-
     public void ShowEndGameScreen(string message)
     {
         if (EndgamePanel != null)
@@ -102,7 +97,7 @@ public class UIManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    // --- Highlighting method for Break Wall ---
+    // Highlighting method for Break Wall 
     public void HighlightBreakableWalls(Vector2Int playerGridPos)
     {
 
@@ -113,7 +108,7 @@ public class UIManager : MonoBehaviour
         CheckAndHighlightWall(playerGridPos, Direction.Left);
     }
 
-    // --- Highlighting method for Jump ---
+    //  Highlighting method for Jump 
     public void HighlightJumpableTiles(Vector2Int playerGridPos)
     {
         Debug.Log($"[UIManager] Starting to highlight JUMP targets from player position: {playerGridPos}");
@@ -124,7 +119,7 @@ public class UIManager : MonoBehaviour
         CheckAndHighlightJump(playerGridPos, Direction.Left, Vector2Int.left);
     }
 
-    // --- Highlighting method for Dash (This is the missing one) ---
+    // Highlighting method for Dash 
     public void HighlightDashPaths(Vector2Int playerGridPos)
     {
         ClearHighlights();
@@ -165,7 +160,7 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // Two-Way check for wall data (this part is correct)
+        // Two-Way check for wall data 
         MazeCell cell1 = mazeSpawner.MazeGenerator.GetMazeCell(pos.y, pos.x);
         MazeCell cell2 = mazeSpawner.MazeGenerator.GetMazeCell(nextPos.y, nextPos.x);
 
@@ -177,7 +172,7 @@ public class UIManager : MonoBehaviour
 
         if (wallInTheWay)
         {
-            // --- NEW, ROBUST LOGIC FOR GETTING THE WALL OBJECT ---
+            // Getting the wall object
             GameObject wallObj = null;
             TileInfo tileInfo1 = mazeSpawner.GetTileInfo(pos.y, pos.x);
             TileInfo tileInfo2 = mazeSpawner.GetTileInfo(nextPos.y, nextPos.x);
@@ -210,7 +205,6 @@ public class UIManager : MonoBehaviour
             }
             else
             {
-                // This log will help if there's still a problem.
                 Debug.LogWarning($"Wall data exists for direction {dir} from {pos}, but no wall GameObject was found on either adjacent TileInfo.");
             }
         }
@@ -256,13 +250,12 @@ public class UIManager : MonoBehaviour
 
     public void ClearHighlights()
     {
-        StopAllCoroutines(); // This is correct.
+        StopAllCoroutines(); 
         foreach (var obj in highlightedObjects)
         {
             if (obj != null)
             {
                 var objRenderer = obj.GetComponentInChildren<Renderer>();
-                // If we have a saved original color for this object, restore it.
                 if (objRenderer != null && originalColors.ContainsKey(obj))
                 {
                     objRenderer.material.color = originalColors[obj];
@@ -282,7 +275,7 @@ public class UIManager : MonoBehaviour
             yield break;
         }
 
-        // --- NEW: Store the original color BEFORE we start flashing ---
+        // Store the original color BEFORE we start flashing
         if (!originalColors.ContainsKey(obj))
         {
             originalColors[obj] = objRenderer.material.color;
@@ -294,7 +287,7 @@ public class UIManager : MonoBehaviour
         {
             objRenderer.material.color = highlightColor;
             yield return new WaitForSeconds(0.3f);
-            // We now get the original color from our dictionary.
+            // We get the original color from our dictionary.
             objRenderer.material.color = originalColors[obj];
             yield return new WaitForSeconds(0.3f);
         }
